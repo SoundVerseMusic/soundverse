@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#100b20">
+<title>SoundVerse — Your Music, Your Universe</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(145deg,#100b20,#24113e,#101323);color:#fff;font-family:system-ui,Arial,sans-serif;padding:24px 18px}
+main{max-width:480px;margin:auto}
+header{display:flex;align-items:center;gap:12px;margin:12px 0 32px}
+.logo{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,#c084fc,#713cf5);display:grid;place-items:center;font-size:25px}
+h1{font-size:23px;margin:0}header p{margin:3px 0;color:#c5b5df;font-size:12px}
+h2{font-size:20px;margin:0 0 8px}
+.muted{color:#b9adc9;font-size:14px}
+.card{background:#ffffff0d;border:1px solid #ffffff1c;border-radius:24px;padding:22px;margin:16px 0}
+.art{height:230px;border-radius:20px;background:radial-gradient(circle at 30% 25%,#e0a4ff,transparent 30%),radial-gradient(circle at 75% 70%,#5945e8,transparent 38%),linear-gradient(135deg,#35175b,#15152d);display:grid;place-items:center;font-size:76px}
+.track{text-align:center;margin:22px 0}
+.track h2{font-size:21px;overflow-wrap:anywhere}
+.track p{margin:6px 0}
+input[type=range]{width:100%;accent-color:#c084fc}
+.times{display:flex;justify-content:space-between;color:#b9adc9;font-size:12px}
+.controls{display:flex;justify-content:center;align-items:center;gap:20px;margin:18px 0}
+button,.filelabel{border:1px solid #ffffff25;background:#ffffff12;color:white;padding:12px 16px;border-radius:14px;font-size:15px;cursor:pointer}
+button:active,.filelabel:active{transform:scale(.97)}
+.play{width:64px;height:64px;border-radius:50%;background:#c084fc;color:#1b1030;border:0;font-size:25px}
+.active{background:#b785ed!important;color:#1b1030!important}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.filelabel{display:inline-block}
+input[type=file]{display:none}
+.note{font-size:12px;color:#b9adc9;line-height:1.6}
+footer{text-align:center;color:#b9adc9;font-size:12px;padding:20px}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="logo">♫</div>
+<div><h1>SoundVerse</h1><p>YOUR MUSIC. YOUR UNIVERSE.</p></div>
+</header>
+
+<h2>Your personal music space</h2>
+<p class="muted">Your music, your way. No ads in this player.</p>
+
+<section class="card">
+<div class="art">♫</div>
+<div class="track">
+<h2 id="title">Choose your music</h2>
+<p class="muted" id="artist">Your next favourite starts here</p>
+</div>
+<audio id="audio" preload="metadata"></audio>
+<input id="seek" type="range" min="0" max="100" value="0" aria-label="Song progress">
+<div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div>
+<div class="controls">
+<button id="shuffle" aria-label="Shuffle">🔀</button>
+<button id="prev" aria-label="Previous track">⏮</button>
+<button class="play" id="play" aria-label="Play">▶</button>
+<button id="next" aria-label="Next track">⏭</button>
+<button id="repeat" aria-label="Repeat">🔁</button>
+</div>
+<div class="actions">
+<label class="filelabel" for="files">＋ Choose audio files</label>
+<input id="files" type="file" accept="audio/*" multiple>
+<button id="fav">♡ Favourite</button>
+</div>
+<p class="note" id="status" role="status">Choose audio files stored on your phone to begin.</p>
+</section>
+
+<section class="card">
+<h2>Made for your universe ✨</h2>
+<p class="muted">Simple controls. Your own music. Your listening time is yours.</p>
+<p class="note">This first version plays audio files you select. It does not yet include online streaming, cloud playlists, or background playback guarantees.</p>
+</section>
+<footer>SoundVerse · An independent project in progress</footer>
+</main>
+
+<script>
+const audio=document.getElementById('audio');
+const files=document.getElementById('files');
+const title=document.getElementById('title');
+const artist=document.getElementById('artist');
+const status=document.getElementById('status');
+const seek=document.getElementById('seek');
+const play=document.getElementById('play');
+let tracks=[],index=0,shuffle=false,repeat=false,favourites=new Set(),urls=[];
+
+function time(s){
+ if(!Number.isFinite(s))return '0:00';
+ return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+}
+function load(i,autoplay=false){
+ if(!tracks.length)return;
+ index=(i+tracks.length)%tracks.length;
+ audio.src=urls[index];
+ title.textContent=tracks[index].name.replace(/\.[^.]+$/,'');
+ artist.textContent='Local audio · Track '+(index+1)+' of '+tracks.length;
+ seek.value=0;
+ if(autoplay) audio.play().catch(()=>status.textContent='Tap Play to start your music.');
+ updateFav();
+}
+function updateFav(){
+ const on=favourites.has(index);
+ document.getElementById('fav').textContent=on?'♥ Favourited':'♡ Favourite';
+ document.getElementById('fav').classList.toggle('active',on);
+}
+files.addEventListener('change',()=>{
+ urls.forEach(URL.revokeObjectURL);
+ tracks=Array.from(files.files||[]);
+ urls=tracks.map(f=>URL.createObjectURL(f));
+ favourites.clear();
+ if(tracks.length){
+ load(0);
+ status.textContent=tracks.length+' audio file(s) ready. Tap Play to listen.';
+ }else{
+ title.textContent='Choose your music';
+ artist.textContent='Your next favourite starts here';
+ status.textContent='No audio files selected.';
+ }
+});
+play.addEventListener('click',()=>{
+ if(!tracks.length){files.click();return;}
+ if(audio.paused){
+ audio.play().then(()=>{play.textContent='Ⅱ';play.setAttribute('aria-label','Pause');})
+ .catch(()=>status.textContent='Could not play this file. Try another audio file.');
+ }else{audio.pause();}
+});
+audio.addEventListener('play',()=>{play.textContent='Ⅱ';play.setAttribute('aria-label','Pause');});
+audio.addEventListener('pause',()=>{play.textContent='▶';play.setAttribute('aria-label','Play');});
+audio.addEventListener('timeupdate',()=>{
+ seek.value=audio.duration?audio.currentTime/audio.duration*100:0;
+ document.getElementById('elapsed').textContent=time(audio.currentTime);
+ document.getElementById('duration').textContent=time(audio.duration);
+});
+seek.addEventListener('input',()=>{
+ if(Number.isFinite(audio.duration))audio.currentTime=Number(seek.value)/100*audio.duration;
+});
+document.getElementById('prev').addEventListener('click',()=>{
+ if(audio.currentTime>3){audio.currentTime=0;}else load(index-1,true);
+});
+document.getElementById('next').addEventListener('click',()=>{
+ load(shuffle&&tracks.length>1?((index+1+Math.floor(Math.random()*(tracks.length-1)) )%tracks.length):index+1,true);
+});
+document.getElementById('shuffle').addEventListener('click',e=>{
+ shuffle=!shuffle;e.currentTarget.classList.toggle('active',shuffle);
+});
+document.getElementById('repeat').addEventListener('click',e=>{
+ repeat=!repeat;audio.loop=repeat;e.currentTarget.classList.toggle('active',repeat);
+});
+document.getElementById('fav').addEventListener('click',()=>{
+ if(!tracks.length)return;
+ favourites.has(index)?favourites.delete(index):favourites.add(index);
+ updateFav();
+});
+audio.addEventListener('ended',()=>{
+ if(!repeat&&tracks.length)load(shuffle?Math.floor(Math.random()*tracks.length):index+1,true);
+});
+window.addEventListener('pagehide',()=>urls.forEach(URL.revokeObjectURL));
+</script>
+</body>
+  </html>
+  
